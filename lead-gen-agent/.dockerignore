@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env.local
+
+# Secrets (never bake into image)
+.env
+service_account.json
+*.json.key
+
+# Database files (use mounted volume in prod)
+*.db
+*.sqlite
+
+# Exports (use mounted volume)
+exports/
+demo/output/
+
+# Tests
+tests/
+pytest.ini
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# CI
+.github/
+
+# Frontend build artifacts (built in separate Docker stage)
+frontend/node_modules/
+frontend/dist/
+
+# Docs (not needed in image)
+*.md
+!README.md

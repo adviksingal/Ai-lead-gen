@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  # ── REST API server ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: ai-lead-gen-agent:latest
+    container_name: lead-gen-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      # Persist the SQLite database + exports between restarts
+      - lead-data:/app/data
+      - lead-exports:/app/exports
+    environment:
+      # Required
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Optional search providers (falls back to Google scraping if unset)
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      # API security
+      - API_KEY=${API_KEY:-}
+      # Optional Sheets export
+      - GOOGLE_SHEETS_KEY_FILE=${GOOGLE_SHEETS_KEY_FILE:-}
+      # Tuning
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-20250514}
+      - ENRICHMENT_CONCURRENCY=${ENRICHMENT_CONCURRENCY:-3}
+      - DATABASE_URL=/app/data/leads.db
+      # Webhook secret for run-completion events
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  lead-data:
+    driver: local
+  lead-exports:
+    driver: local

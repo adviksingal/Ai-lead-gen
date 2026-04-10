@@ -54,6 +54,7 @@ class RunConfig:
     sender_name: str = "Alex"
     sender_company: str = "YourCo"
     skip_outreach: bool = False
+    webhook_url: Optional[str] = None  # POST run.completed / run.failed events here
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -153,12 +154,14 @@ def _enrich_email_score_outreach(
 # Main run function
 # ---------------------------------------------------------------------------
 
-def run_lead_gen(config: RunConfig) -> tuple[str, list[dict]]:
+def run_lead_gen(config: RunConfig, run_id: Optional[str] = None) -> tuple[str, list[dict]]:
     """
     Execute a complete lead generation run.
 
     Args:
         config: RunConfig with all parameters
+        run_id: Optional pre-generated run ID (used by the API server so the
+                caller can poll the same ID it already returned to the client).
 
     Returns:
         (run_id, list of fully-enriched lead dicts)
@@ -166,7 +169,7 @@ def run_lead_gen(config: RunConfig) -> tuple[str, list[dict]]:
     # Initialise DB
     init_db()
 
-    run_id = str(uuid.uuid4())
+    run_id = run_id or str(uuid.uuid4())
     progress = RunProgress(run_id)
 
     logger.info(
@@ -232,11 +235,29 @@ def run_lead_gen(config: RunConfig) -> tuple[str, list[dict]]:
         update_run_status(run_id, "done", summary)
         logger.info("[run=%s] Run complete: %s", run_id[:8], summary)
 
+        # Fire webhook if configured
+        if config.webhook_url:
+            from .webhook import send_webhook
+            send_webhook(config.webhook_url, "run.completed", {
+                "run_id": run_id,
+                "status": "done",
+                "summary": summary,
+            })
+
         return run_id, results
 
     except Exception as exc:
         logger.error("[run=%s] Fatal run error: %s", run_id[:8], exc, exc_info=True)
-        update_run_status(run_id, "failed", {"error": str(exc), **progress.summary()})
+        error_summary = {"error": str(exc), **progress.summary()}
+        update_run_status(run_id, "failed", error_summary)
+
+        if config.webhook_url:
+            from .webhook import send_webhook
+            send_webhook(config.webhook_url, "run.failed", {
+                "run_id": run_id,
+                "status": "failed",
+                "summary": error_summary,
+            })
         raise
 
 
