@@ -39,6 +39,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -410,3 +411,24 @@ def export_endpoint(
         media_type=media_type,
         filename=Path(output_path).name,
     )
+
+
+# ---------------------------------------------------------------------------
+# Serve built React frontend (production)
+# Mount AFTER all API routes so they take priority.
+# ---------------------------------------------------------------------------
+
+_frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+
+if _frontend_dist.exists():
+    # Serve /assets/* (JS, CSS, images built by Vite)
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_frontend_dist / "assets")),
+        name="frontend-assets",
+    )
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str) -> FileResponse:
+        """Catch-all: return index.html for all non-API paths (React Router)."""
+        return FileResponse(str(_frontend_dist / "index.html"))
