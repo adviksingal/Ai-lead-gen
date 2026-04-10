@@ -103,7 +103,7 @@ def _run_in_background(run_id: str, config: RunConfig) -> None:
     """Called in thread pool — runs the full pipeline."""
     try:
         _active_runs[run_id] = "running"
-        run_lead_gen(config)
+        run_lead_gen(config, run_id=run_id)
         _active_runs[run_id] = "done"
     except Exception as exc:
         logger.error("Background run %s failed: %s", run_id, exc)

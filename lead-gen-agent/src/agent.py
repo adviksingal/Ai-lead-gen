@@ -153,12 +153,14 @@ def _enrich_email_score_outreach(
 # Main run function
 # ---------------------------------------------------------------------------
 
-def run_lead_gen(config: RunConfig) -> tuple[str, list[dict]]:
+def run_lead_gen(config: RunConfig, run_id: Optional[str] = None) -> tuple[str, list[dict]]:
     """
     Execute a complete lead generation run.
 
     Args:
         config: RunConfig with all parameters
+        run_id: Optional pre-generated run ID (used by the API server so the
+                caller can poll the same ID it already returned to the client).
 
     Returns:
         (run_id, list of fully-enriched lead dicts)
@@ -166,7 +168,7 @@ def run_lead_gen(config: RunConfig) -> tuple[str, list[dict]]:
     # Initialise DB
     init_db()
 
-    run_id = str(uuid.uuid4())
+    run_id = run_id or str(uuid.uuid4())
     progress = RunProgress(run_id)
 
     logger.info(
