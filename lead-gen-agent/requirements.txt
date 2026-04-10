@@ -1,36 +1,42 @@
-# Core AI
+# ── Core AI ──────────────────────────────────────────────────────────────────
 anthropic>=0.40.0
 
-# Web scraping
+# ── Web scraping ─────────────────────────────────────────────────────────────
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
 
-# Google search scraping (no API key needed)
+# ── Search providers ─────────────────────────────────────────────────────────
+# Google scraping (free, no API key needed — built-in fallback)
 googlesearch-python>=1.2.3
+# Tavily API (recommended — set TAVILY_API_KEY for reliable results)
+tavily-python>=0.3.0
 
-# REST API
+# ── REST API ─────────────────────────────────────────────────────────────────
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 pydantic>=2.9.0
+slowapi>=0.1.9
 
-# CLI
+# ── CLI ──────────────────────────────────────────────────────────────────────
 click>=8.1.0
 rich>=13.9.0
 
-# DNS resolution for SMTP email verification
+# ── Email verification ───────────────────────────────────────────────────────
 dnspython>=2.6.0
 
-# Async HTTP (used by enrichment for parallel scraping)
+# ── HTTP client ──────────────────────────────────────────────────────────────
 httpx>=0.27.0
 
-# Data handling
+# ── Config / environment ─────────────────────────────────────────────────────
 python-dotenv>=1.0.0
 
-# Optional: Google Sheets export
-gspread>=6.1.0
-google-auth>=2.36.0
+# ── Optional: Google Sheets export ───────────────────────────────────────────
+# pip install "ai-lead-gen-agent[sheets]"  or:
+# gspread>=6.1.0
+# google-auth>=2.36.0
 
-# Dev/testing
+# ── Development / testing ────────────────────────────────────────────────────
 pytest>=8.3.0
 pytest-asyncio>=0.24.0
+pytest-mock>=3.14.0

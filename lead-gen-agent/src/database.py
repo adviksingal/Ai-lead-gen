@@ -211,6 +211,69 @@ def list_leads(
         return [_deserialise_lead(dict(r)) for r in rows]
 
 
+def lead_exists(linkedin_url: Optional[str] = None, name: Optional[str] = None, company: Optional[str] = None) -> bool:
+    """
+    Return True if a lead matching the given identifiers already exists
+    in any previous run — used to skip duplicates during discovery.
+
+    Checks in order:
+      1. LinkedIn URL (exact match)
+      2. name + company (case-insensitive)
+    """
+    with get_conn() as conn:
+        if linkedin_url:
+            row = conn.execute(
+                "SELECT id FROM leads WHERE linkedin_url = ?", (linkedin_url,)
+            ).fetchone()
+            if row:
+                return True
+        if name and company:
+            row = conn.execute(
+                "SELECT id FROM leads WHERE lower(name) = lower(?) AND lower(company) = lower(?)",
+                (name, company),
+            ).fetchone()
+            if row:
+                return True
+    return False
+
+
+def get_stats() -> dict:
+    """Return aggregate statistics across all runs and leads."""
+    with get_conn() as conn:
+        total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
+        total_runs = conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
+        tier_counts = dict(
+            conn.execute(
+                "SELECT tier, COUNT(*) FROM leads WHERE tier IS NOT NULL GROUP BY tier"
+            ).fetchall()
+        )
+        with_email = conn.execute(
+            "SELECT COUNT(*) FROM leads WHERE email IS NOT NULL AND email != ''"
+        ).fetchone()[0]
+        verified_email = conn.execute(
+            "SELECT COUNT(*) FROM leads WHERE email_verified = 1"
+        ).fetchone()[0]
+        with_outreach = conn.execute(
+            "SELECT COUNT(*) FROM leads WHERE email_subject IS NOT NULL AND email_subject != ''"
+        ).fetchone()[0]
+        avg_score = conn.execute(
+            "SELECT ROUND(AVG(score), 1) FROM leads WHERE score IS NOT NULL"
+        ).fetchone()[0]
+        cache_size = conn.execute("SELECT COUNT(*) FROM scrape_cache").fetchone()[0]
+    return {
+        "total_leads": total_leads,
+        "total_runs": total_runs,
+        "hot_leads": tier_counts.get("Hot", 0),
+        "warm_leads": tier_counts.get("Warm", 0),
+        "cold_leads": tier_counts.get("Cold", 0),
+        "leads_with_email": with_email,
+        "leads_with_verified_email": verified_email,
+        "leads_with_outreach": with_outreach,
+        "average_score": avg_score,
+        "scrape_cache_entries": cache_size,
+    }
+
+
 def _deserialise_lead(lead: dict) -> dict:
     for f in ("pain_points", "tech_signals"):
         if isinstance(lead.get(f), str):

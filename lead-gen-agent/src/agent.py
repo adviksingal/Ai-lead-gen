@@ -54,6 +54,7 @@ class RunConfig:
     sender_name: str = "Alex"
     sender_company: str = "YourCo"
     skip_outreach: bool = False
+    webhook_url: Optional[str] = None  # POST run.completed / run.failed events here
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -234,11 +235,29 @@ def run_lead_gen(config: RunConfig, run_id: Optional[str] = None) -> tuple[str, 
         update_run_status(run_id, "done", summary)
         logger.info("[run=%s] Run complete: %s", run_id[:8], summary)
 
+        # Fire webhook if configured
+        if config.webhook_url:
+            from .webhook import send_webhook
+            send_webhook(config.webhook_url, "run.completed", {
+                "run_id": run_id,
+                "status": "done",
+                "summary": summary,
+            })
+
         return run_id, results
 
     except Exception as exc:
         logger.error("[run=%s] Fatal run error: %s", run_id[:8], exc, exc_info=True)
-        update_run_status(run_id, "failed", {"error": str(exc), **progress.summary()})
+        error_summary = {"error": str(exc), **progress.summary()}
+        update_run_status(run_id, "failed", error_summary)
+
+        if config.webhook_url:
+            from .webhook import send_webhook
+            send_webhook(config.webhook_url, "run.failed", {
+                "run_id": run_id,
+                "status": "failed",
+                "summary": error_summary,
+            })
         raise
 
 
