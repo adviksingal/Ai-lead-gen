@@ -7,17 +7,23 @@ interface Props {
   onClose: () => void;
 }
 
+type Step = 1 | 2;
+
 export function NewRunModal({ onClose }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [step, setStep] = useState<Step>(1);
 
+  // Step 1
   const [industry, setIndustry] = useState("B2B SaaS");
   const [titlesRaw, setTitlesRaw] = useState("VP of Sales, Head of Sales, CRO");
   const [location, setLocation] = useState("UK");
+
+  // Step 2
   const [keywordsRaw, setKeywordsRaw] = useState("");
   const [limit, setLimit] = useState(25);
   const [senderName, setSenderName] = useState("Alex");
-  const [senderCompany, setSenderCompany] = useState("YourCo");
+  const [senderCompany, setSenderCompany] = useState("");
   const [skipOutreach, setSkipOutreach] = useState(false);
 
   const mutation = useMutation({
@@ -30,12 +36,15 @@ export function NewRunModal({ onClose }: Props) {
     },
   });
 
+  const handleNext = (e: FormEvent) => {
+    e.preventDefault();
+    setStep(2);
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const titles = titlesRaw.split(",").map((t) => t.trim()).filter(Boolean);
     const keywords = keywordsRaw.split(",").map((k) => k.trim()).filter(Boolean);
-    if (!industry || titles.length === 0) return;
-
     mutation.mutate({
       industry,
       titles,
@@ -49,170 +58,208 @@ export function NewRunModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f1624] border border-white/[0.1] rounded-2xl shadow-2xl w-full max-w-md mx-4">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div>
-            <h2 className="text-base font-semibold text-white">Start New Run</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Configure your lead generation criteria</p>
+            <h2 className="text-base font-semibold text-white">
+              {step === 1 ? "Who are you looking for?" : "Run settings"}
+            </h2>
+            <div className="flex items-center gap-2 mt-2">
+              {[1, 2].map((s) => (
+                <div
+                  key={s}
+                  className={`h-1 rounded-full transition-all ${
+                    s === step ? "w-8 bg-indigo-500" : s < step ? "w-4 bg-indigo-700" : "w-4 bg-white/10"
+                  }`}
+                />
+              ))}
+              <span className="text-[11px] text-slate-600 ml-1">Step {step} of 2</span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-slate-800"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/[0.06] transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Industry */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Industry <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              placeholder="e.g. B2B SaaS, Fintech, Healthcare"
-              required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-            />
-          </div>
+        <div className="mx-6 h-px bg-white/[0.06] mb-5" />
 
-          {/* Titles */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Target Titles <span className="text-red-400">*</span>
-              <span className="text-slate-600 font-normal ml-1">(comma-separated)</span>
-            </label>
-            <input
-              type="text"
-              value={titlesRaw}
-              onChange={(e) => setTitlesRaw(e.target.value)}
-              placeholder="VP of Sales, Head of Sales, CRO"
-              required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-            />
-          </div>
-
-          {/* Location + Limit */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* Step 1 */}
+        {step === 1 && (
+          <form onSubmit={handleNext} className="px-6 pb-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Location</label>
+              <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Industry
+              </label>
+              <input
+                type="text"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                placeholder="e.g. B2B SaaS, Fintech, Healthcare IT"
+                required
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.06] transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Target job titles <span className="text-slate-600 normal-case">(comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                value={titlesRaw}
+                onChange={(e) => setTitlesRaw(e.target.value)}
+                placeholder="VP Sales, Head of Sales, CRO, Sales Director"
+                required
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.06] transition-all"
+              />
+              {titlesRaw && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {titlesRaw.split(",").map((t) => t.trim()).filter(Boolean).map((t) => (
+                    <span key={t} className="px-2 py-0.5 text-[11px] bg-indigo-600/20 text-indigo-300 rounded-md border border-indigo-500/20">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Location <span className="text-slate-600 normal-case">(optional)</span>
+              </label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="UK, USA, EMEA..."
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                placeholder="UK, USA, EMEA, London..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.06] transition-all"
               />
             </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[13px] font-semibold rounded-lg transition-colors shadow-lg shadow-indigo-900/30 mt-2"
+            >
+              Continue →
+            </button>
+          </form>
+        )}
+
+        {/* Step 2 */}
+        {step === 2 && (
+          <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                  Lead limit
+                </label>
+                <input
+                  type="number"
+                  value={limit}
+                  onChange={(e) => setLimit(Math.min(100, Math.max(1, Number(e.target.value))))}
+                  min={1} max={100}
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white focus:outline-none focus:border-indigo-500/60 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                  Your name
+                </label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Alex"
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 transition-all"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Lead Limit <span className="text-slate-600 font-normal">(1–100)</span>
+              <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Your company <span className="text-slate-600 normal-case">(for email personalisation)</span>
               </label>
-              <input
-                type="number"
-                value={limit}
-                onChange={(e) => setLimit(Math.min(100, Math.max(1, Number(e.target.value))))}
-                min={1}
-                max={100}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Keywords */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Keywords <span className="text-slate-600 font-normal">(optional, comma-separated)</span>
-            </label>
-            <input
-              type="text"
-              value={keywordsRaw}
-              onChange={(e) => setKeywordsRaw(e.target.value)}
-              placeholder="Series A, revenue operations, outbound..."
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-            />
-          </div>
-
-          {/* Sender info */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Your Name</label>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Alex"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Your Company</label>
               <input
                 type="text"
                 value={senderCompany}
                 onChange={(e) => setSenderCompany(e.target.value)}
                 placeholder="Acme Inc"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 transition-all"
               />
             </div>
-          </div>
 
-          {/* Skip outreach */}
-          <label className="flex items-center gap-2.5 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={skipOutreach}
-              onChange={(e) => setSkipOutreach(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-              Skip outreach email generation
-            </span>
-          </label>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Keywords <span className="text-slate-600 normal-case">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={keywordsRaw}
+                onChange={(e) => setKeywordsRaw(e.target.value)}
+                placeholder="Series A, revenue operations, outbound..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3.5 py-2.5 text-[13px] text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/60 transition-all"
+              />
+            </div>
 
-          {/* Error */}
-          {mutation.isError && (
-            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-              {(mutation.error as Error).message}
-            </p>
-          )}
+            <label className="flex items-center gap-3 cursor-pointer group py-1">
+              <input
+                type="checkbox"
+                checked={skipOutreach}
+                onChange={(e) => setSkipOutreach(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/[0.04] text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-[13px] text-slate-400">Skip outreach email generation</span>
+            </label>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-slate-400 bg-slate-800 rounded-lg hover:bg-slate-700 hover:text-slate-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-indigo-900/30"
-            >
-              {mutation.isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Starting...
-                </span>
-              ) : (
-                "Start Run"
-              )}
-            </button>
-          </div>
-        </form>
+            {mutation.isError && (
+              <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                {(mutation.error as Error).message}
+              </p>
+            )}
+
+            {/* Summary */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-slate-400 space-y-1">
+              <p><span className="text-slate-300">Industry:</span> {industry}</p>
+              <p><span className="text-slate-300">Titles:</span> {titlesRaw}</p>
+              {location && <p><span className="text-slate-300">Location:</span> {location}</p>}
+              <p><span className="text-slate-300">Leads:</span> up to {limit}</p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 py-2.5 text-[13px] font-medium text-slate-400 bg-white/[0.04] hover:bg-white/[0.08] rounded-lg border border-white/[0.06] transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="flex-[2] py-2.5 text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2"
+              >
+                {mutation.isPending ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  "Start finding leads"
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

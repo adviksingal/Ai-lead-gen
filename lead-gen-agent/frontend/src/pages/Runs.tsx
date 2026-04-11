@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api, timeAgo } from "../api/client";
 import { RunStatusBadge } from "../components/RunStatusBadge";
-import { TierBadge } from "../components/TierBadge";
 import { NewRunModal } from "../components/NewRunModal";
 
 export function Runs() {
@@ -16,23 +15,25 @@ export function Runs() {
   });
 
   const runs = data?.runs ?? [];
-  const hasRunning = runs.some((r) => r.status === "running");
+  const runningCount = runs.filter((r) => r.status === "running").length;
 
   return (
     <div className="p-8">
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Runs</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {runs.length} total run{runs.length !== 1 ? "s" : ""}
-            {hasRunning && (
-              <span className="ml-2 text-yellow-400">· {runs.filter(r => r.status === "running").length} running</span>
+          <h1 className="text-xl font-bold text-white">Runs</h1>
+          <p className="text-[13px] text-slate-500 mt-0.5">
+            {runs.length} total
+            {runningCount > 0 && (
+              <span className="ml-2 text-yellow-400">
+                · {runningCount} running
+              </span>
             )}
           </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-indigo-900/30"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-900/30"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -41,90 +42,103 @@ export function Runs() {
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-[#0f1624] border border-white/[0.07] rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="p-6 space-y-3 animate-pulse">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-slate-800 rounded-lg" />
+          <div className="p-6 space-y-2 animate-pulse">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-14 bg-white/[0.04] rounded-lg" />
             ))}
           </div>
         ) : runs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
               <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
             <p className="text-slate-400 font-medium">No runs yet</p>
-            <p className="text-sm text-slate-600 mt-1">Start your first lead generation run</p>
+            <p className="text-[12px] text-slate-600 mt-1">Start a run to begin finding leads</p>
             <button
               onClick={() => setShowModal(true)}
-              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+              className="mt-5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors"
             >
-              Start Run
+              Start first run
             </button>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Industry</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Titles</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Results</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Started</th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {runs.map((run) => (
-                <tr key={run.id} className="hover:bg-slate-800/40 transition-colors group">
-                  <td className="px-5 py-4">
-                    <span className="text-sm font-medium text-slate-200">{run.config?.industry ?? "—"}</span>
-                  </td>
-                  <td className="px-5 py-4 max-w-[220px]">
-                    <span className="text-sm text-slate-400 truncate block">
-                      {run.config?.titles?.slice(0, 2).join(", ") ?? "—"}
-                      {(run.config?.titles?.length ?? 0) > 2 && (
-                        <span className="text-slate-600"> +{run.config.titles.length - 2}</span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-400">
-                    {run.config?.location || <span className="text-slate-600">—</span>}
-                  </td>
-                  <td className="px-5 py-4">
-                    <RunStatusBadge status={run.status} />
-                  </td>
-                  <td className="px-5 py-4">
-                    {run.summary ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-slate-300 font-medium">{run.summary.total_leads}</span>
-                        <div className="flex gap-1">
-                          {run.summary.hot > 0 && <TierBadge tier="Hot" />}
-                          {run.summary.warm > 0 && <TierBadge tier="Warm" />}
-                        </div>
-                      </div>
-                    ) : run.status === "running" ? (
-                      <span className="text-xs text-yellow-400 animate-pulse">Processing...</span>
-                    ) : (
-                      <span className="text-slate-600">—</span>
+          <div className="divide-y divide-white/[0.05]">
+            {runs.map((run) => (
+              <Link
+                key={run.id}
+                to={`/runs/${run.id}`}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.03] transition-colors group"
+              >
+                {/* Status */}
+                <RunStatusBadge status={run.status} />
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-semibold text-slate-200">
+                      {run.config?.industry ?? "—"}
+                    </p>
+                    {run.config?.location && (
+                      <span className="text-[12px] text-slate-600">· {run.config.location}</span>
                     )}
-                  </td>
-                  <td className="px-5 py-4 text-xs text-slate-500">{timeAgo(run.created_at)}</td>
-                  <td className="px-5 py-4">
-                    <Link
-                      to={`/runs/${run.id}`}
-                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      View leads →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <p className="text-[11px] text-slate-600 truncate mt-0.5">
+                    {run.config?.titles?.join(", ") ?? "—"}
+                  </p>
+                </div>
+
+                {/* Results */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {run.summary ? (
+                    <>
+                      <span className="text-[13px] font-medium text-slate-300">
+                        {run.summary.total_leads} leads
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {run.summary.hot > 0 && (
+                          <span className="flex items-center gap-1 text-[12px] text-red-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                            {run.summary.hot}
+                          </span>
+                        )}
+                        {run.summary.warm > 0 && (
+                          <span className="flex items-center gap-1 text-[12px] text-amber-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                            {run.summary.warm}
+                          </span>
+                        )}
+                        {run.summary.cold > 0 && (
+                          <span className="flex items-center gap-1 text-[12px] text-blue-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" />
+                            {run.summary.cold}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : run.status === "running" ? (
+                    <span className="text-[12px] text-yellow-400 animate-pulse">Processing...</span>
+                  ) : null}
+                </div>
+
+                {/* Time */}
+                <span className="text-[11px] text-slate-600 flex-shrink-0 w-16 text-right">
+                  {timeAgo(run.created_at)}
+                </span>
+
+                {/* Arrow */}
+                <svg
+                  className="w-4 h-4 text-slate-700 group-hover:text-slate-500 transition-colors flex-shrink-0"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            ))}
+          </div>
         )}
       </div>
 
